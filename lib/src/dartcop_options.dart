@@ -1,6 +1,5 @@
-import 'dart:io' show File;
-
 import 'package:analyzer/analysis_rule/rule_context.dart';
+import 'package:analyzer/file_system/file_system.dart' as fs;
 import 'package:yaml/yaml.dart';
 
 /// Holds the configured thresholds from the `dartcop:` section of
@@ -30,15 +29,15 @@ class DartcopOptions {
     final root = context.package?.root;
     if (root == null) return empty;
 
-    return _cache.putIfAbsent(root.path, () => _read(root.path));
+    return _cache.putIfAbsent(root.path, () => _read(root));
   }
 
-  static DartcopOptions _read(String packageRootPath) {
+  static DartcopOptions _read(fs.Folder root) {
     try {
-      final optionsFile = '$packageRootPath/analysis_options.yaml';
-      final content = _readFile(optionsFile);
-      if (content == null) return empty;
+      final file = root.getChildAssumingFile('analysis_options.yaml');
+      if (!file.exists) return empty;
 
+      final content = file.readAsStringSync();
       final doc = loadYaml(content);
       if (doc is! YamlMap) return empty;
 
@@ -47,33 +46,33 @@ class DartcopOptions {
 
       return DartcopOptions(
         maxCyclomaticComplexity: _parseInt(
-          dartcopNode, 'max_cyclomatic_complexity', 'max_complexity',
+          dartcopNode,
+          'max_cyclomatic_complexity',
+          'max_complexity',
         ),
         maxLinesPerFunction: _parseInt(
-          dartcopNode, 'max_lines_per_function', 'max_lines',
+          dartcopNode,
+          'max_lines_per_function',
+          'max_lines',
         ),
         maxNestingDepth: _parseInt(
-          dartcopNode, 'max_nesting_depth', 'max_depth',
+          dartcopNode,
+          'max_nesting_depth',
+          'max_depth',
         ),
         maxParameters: _parseInt(
-          dartcopNode, 'max_parameters', 'max_parameters',
+          dartcopNode,
+          'max_parameters',
+          'max_parameters',
         ),
         maxMethodsPerClass: _parseInt(
-          dartcopNode, 'max_methods_per_class', 'max_methods',
+          dartcopNode,
+          'max_methods_per_class',
+          'max_methods',
         ),
       );
-    } on Exception {
+    } catch (_) {
       return empty;
-    }
-  }
-
-  static String? _readFile(String path) {
-    try {
-      final file = File(path);
-      if (!file.existsSync()) return null;
-      return file.readAsStringSync();
-    } on Exception {
-      return null;
     }
   }
 

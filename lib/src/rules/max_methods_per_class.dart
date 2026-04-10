@@ -18,10 +18,10 @@ class MaxMethodsPerClassRule extends AnalysisRule {
   );
 
   MaxMethodsPerClassRule()
-      : super(
-          name: 'max_methods_per_class',
-          description: 'Enforces a maximum number of methods per class.',
-        );
+    : super(
+        name: 'max_methods_per_class',
+        description: 'Enforces a maximum number of methods per class.',
+      );
 
   @override
   bool get canUseParsedResult => true;

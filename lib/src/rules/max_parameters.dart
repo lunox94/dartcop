@@ -18,10 +18,10 @@ class MaxParametersRule extends AnalysisRule {
   );
 
   MaxParametersRule()
-      : super(
-          name: 'max_parameters',
-          description: 'Enforces a maximum number of parameters per function.',
-        );
+    : super(
+        name: 'max_parameters',
+        description: 'Enforces a maximum number of parameters per function.',
+      );
 
   @override
   bool get canUseParsedResult => true;
