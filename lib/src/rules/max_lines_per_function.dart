@@ -6,9 +6,11 @@ import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart';
 
+import '../dartcop_options.dart';
+
 /// Reports functions/methods whose body exceeds a maximum line count.
 class MaxLinesPerFunctionRule extends AnalysisRule {
-  static const _defaultMaxLines = 80;
+  static const defaultMaxLines = 40;
 
   static const LintCode code = LintCode(
     'max_lines_per_function',
@@ -16,9 +18,7 @@ class MaxLinesPerFunctionRule extends AnalysisRule {
         'Consider breaking it into smaller functions.',
   );
 
-  final int maxLines;
-
-  MaxLinesPerFunctionRule({this.maxLines = _defaultMaxLines})
+  MaxLinesPerFunctionRule()
     : super(
         name: 'max_lines_per_function',
         description: 'Enforces a maximum line count per function body.',
@@ -35,7 +35,9 @@ class MaxLinesPerFunctionRule extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = _Visitor(this, context);
+    final threshold =
+        DartcopOptions.of(context).maxLinesPerFunction ?? defaultMaxLines;
+    final visitor = _Visitor(this, context, threshold);
     registry.addFunctionDeclaration(this, visitor);
     registry.addMethodDeclaration(this, visitor);
   }
@@ -44,8 +46,9 @@ class MaxLinesPerFunctionRule extends AnalysisRule {
 class _Visitor extends SimpleAstVisitor<void> {
   final MaxLinesPerFunctionRule rule;
   final RuleContext context;
+  final int threshold;
 
-  _Visitor(this.rule, this.context);
+  _Visitor(this.rule, this.context, this.threshold);
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
@@ -65,7 +68,7 @@ class _Visitor extends SimpleAstVisitor<void> {
     final endLine = lineInfo.getLocation(body.end - 1).lineNumber;
     final lineCount = endLine - startLine + 1;
 
-    if (lineCount > rule.maxLines) {
+    if (lineCount > threshold) {
       rule.reportAtOffset(name.offset, name.length);
     }
   }

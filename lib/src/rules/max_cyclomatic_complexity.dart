@@ -6,11 +6,12 @@ import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart';
 
+import '../dartcop_options.dart';
 import '../helpers/cyclomatic_complexity_visitor.dart';
 
 /// Reports functions/methods whose cyclomatic complexity exceeds a threshold.
 class MaxCyclomaticComplexityRule extends AnalysisRule {
-  static const _defaultMaxComplexity = 15;
+  static const defaultMaxComplexity = 10;
 
   static const LintCode code = LintCode(
     'max_cyclomatic_complexity',
@@ -18,9 +19,7 @@ class MaxCyclomaticComplexityRule extends AnalysisRule {
         'Consider refactoring to reduce complexity.',
   );
 
-  final int maxComplexity;
-
-  MaxCyclomaticComplexityRule({this.maxComplexity = _defaultMaxComplexity})
+  MaxCyclomaticComplexityRule()
     : super(
         name: 'max_cyclomatic_complexity',
         description: 'Enforces a maximum cyclomatic complexity per function.',
@@ -37,7 +36,10 @@ class MaxCyclomaticComplexityRule extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = _Visitor(this);
+    final threshold =
+        DartcopOptions.of(context).maxCyclomaticComplexity ??
+        defaultMaxComplexity;
+    final visitor = _Visitor(this, threshold);
     registry.addFunctionDeclaration(this, visitor);
     registry.addMethodDeclaration(this, visitor);
   }
@@ -45,8 +47,9 @@ class MaxCyclomaticComplexityRule extends AnalysisRule {
 
 class _Visitor extends SimpleAstVisitor<void> {
   final MaxCyclomaticComplexityRule rule;
+  final int threshold;
 
-  _Visitor(this.rule);
+  _Visitor(this.rule, this.threshold);
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
@@ -61,7 +64,7 @@ class _Visitor extends SimpleAstVisitor<void> {
   void _check(FunctionBody body, Token name) {
     final visitor = CyclomaticComplexityVisitor();
     body.accept(visitor);
-    if (visitor.complexity > rule.maxComplexity) {
+    if (visitor.complexity > threshold) {
       rule.reportAtOffset(name.offset, name.length);
     }
   }

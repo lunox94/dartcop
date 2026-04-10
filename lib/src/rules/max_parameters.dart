@@ -5,9 +5,11 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart';
 
+import '../dartcop_options.dart';
+
 /// Reports functions/methods/constructors with too many parameters.
 class MaxParametersRule extends AnalysisRule {
-  static const _defaultMaxParameters = 6;
+  static const defaultMaxParameters = 8;
 
   static const LintCode code = LintCode(
     'max_parameters',
@@ -15,9 +17,7 @@ class MaxParametersRule extends AnalysisRule {
         'Consider using a parameter object or refactoring.',
   );
 
-  final int maxParameters;
-
-  MaxParametersRule({this.maxParameters = _defaultMaxParameters})
+  MaxParametersRule()
       : super(
           name: 'max_parameters',
           description: 'Enforces a maximum number of parameters per function.',
@@ -34,7 +34,9 @@ class MaxParametersRule extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = _Visitor(this);
+    final threshold =
+        DartcopOptions.of(context).maxParameters ?? defaultMaxParameters;
+    final visitor = _Visitor(this, threshold);
     registry.addFunctionDeclaration(this, visitor);
     registry.addMethodDeclaration(this, visitor);
     registry.addConstructorDeclaration(this, visitor);
@@ -43,13 +45,14 @@ class MaxParametersRule extends AnalysisRule {
 
 class _Visitor extends SimpleAstVisitor<void> {
   final MaxParametersRule rule;
+  final int threshold;
 
-  _Visitor(this.rule);
+  _Visitor(this.rule, this.threshold);
 
   @override
   void visitFunctionDeclaration(FunctionDeclaration node) {
     final params = node.functionExpression.parameters;
-    if (params != null && params.parameters.length > rule.maxParameters) {
+    if (params != null && params.parameters.length > threshold) {
       rule.reportAtOffset(node.name.offset, node.name.length);
     }
   }
@@ -57,14 +60,14 @@ class _Visitor extends SimpleAstVisitor<void> {
   @override
   void visitMethodDeclaration(MethodDeclaration node) {
     final params = node.parameters;
-    if (params != null && params.parameters.length > rule.maxParameters) {
+    if (params != null && params.parameters.length > threshold) {
       rule.reportAtOffset(node.name.offset, node.name.length);
     }
   }
 
   @override
   void visitConstructorDeclaration(ConstructorDeclaration node) {
-    if (node.parameters.parameters.length > rule.maxParameters) {
+    if (node.parameters.parameters.length > threshold) {
       rule.reportAtNode(node.returnType);
     }
   }
